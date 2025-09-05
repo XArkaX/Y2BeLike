@@ -1,0 +1,8 @@
+# YouTube video/audio downloader
+yt-dlp>=2023.12.30
+
+# Modern GUI framework for the application interface
+kivy>=2.3.0
+
+# FFmpeg integration for audio/video processing
+ffmpeg-python>=0.2.0
