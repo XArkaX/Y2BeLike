@@ -16,7 +16,6 @@ from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.filechooser import FileChooserListView
 import threading
-import os
 from typing import Optional, List, Dict, Tuple
 from urllib.parse import urlparse, parse_qs
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -157,25 +156,6 @@ def parse_multiple_urls(input_string: str) -> List[str]:
     return valid_urls
 
 
-def get_available_formats(url: str) -> None:
-    """
-    List available formats for debugging purposes.
-
-    Args:
-        url (str): YouTube URL to check formats for
-    """
-    ydl_opts = {
-        'listformats': True,
-        'quiet': False
-    }
-
-    try:
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info(url, download=False)
-    except Exception as e:
-        print(f"Error listing formats: {str(e)}")
-
-
 def download_single_video(url: str, output_path: str, thread_id: int = 0, audio_only: bool = False, quality: str = "best") -> dict:
     """
     Download a single YouTube video, playlist, or channel.
@@ -257,10 +237,6 @@ def download_single_video(url: str, output_path: str, thread_id: int = 0, audio_
     # Set different output templates for playlists, channels and single videos
     content_type, cached_info = get_url_info(url)
 
-    # Debug: Print detection result
-    if thread_id == 1:  # Only print for first thread to avoid spam
-        print(f"[Debug] URL analysis: {content_type.title()}")
-
     if content_type == 'playlist':
         ydl_opts['outtmpl'] = os.path.join(
             output_path, '%(playlist_title)s', f'%(playlist_index)s-%(title)s.{file_extension}')
@@ -331,7 +307,7 @@ def download_single_video(url: str, output_path: str, thread_id: int = 0, audio_
 
 
 def download_youtube_content(urls: List[str], output_path: Optional[str] = None,
-                              list_formats: bool = False, max_workers: int = 3, audio_only: bool = False, quality: str = "best") -> None:
+                              max_workers: int = 3, audio_only: bool = False, quality: str = "best") -> None:
     """
     Download YouTube content (single videos, playlists, or channels) in MP4 format or MP3 audio only.
     Supports multiple URLs for simultaneous downloading.
@@ -339,19 +315,12 @@ def download_youtube_content(urls: List[str], output_path: Optional[str] = None,
     Args:
         urls (List[str]): List of YouTube URLs to download (videos, playlists, or channels)
         output_path (str, optional): Directory to save the downloads. Defaults to './downloads'
-        list_formats (bool): If True, only list available formats without downloading
         max_workers (int): Maximum number of concurrent downloads
         audio_only (bool): If True, download audio only in MP3 format
     """
     # Set default output path if none provided
     if output_path is None:
         output_path = os.path.join(os.getcwd(), 'downloads')
-
-    # If user wants to list formats, do that for the first URL and return
-    if list_formats:
-        print("Available formats for the first provided URL:")
-        get_available_formats(urls[0])
-        return
 
     # Create output directory if it doesn't exist
     os.makedirs(output_path, exist_ok=True)
@@ -502,40 +471,15 @@ class YouTubeDownloaderGUI(BoxLayout):
         # Buttons layout
         buttons_layout = BoxLayout(size_hint_y=None, height=50, spacing=10)
 
-        # Theme toggle button
-        self.theme_button = Button(
-            text="🌙",
-            size_hint_x=0.2,
-            background_color=(0.3, 0.3, 0.3, 1)
-        )
-        self.theme_button.bind(on_press=self.toggle_theme)
-        buttons_layout.add_widget(self.theme_button)
-
-        # Start button
         self.start_button = Button(
             text="Iniciar Descarga",
-            size_hint_x=0.8,
+            size_hint_x=1,
             background_color=(0.2, 0.6, 0.2, 1)
         )
         self.start_button.bind(on_press=self.start_download)
         buttons_layout.add_widget(self.start_button)
 
         self.add_widget(buttons_layout)
-
-        # Theme variables
-        self.is_dark_mode = False
-        self.light_colors = {
-            'bg': (1, 1, 1, 1),
-            'fg': (0, 0, 0, 1),
-            'secondary': (0.9, 0.9, 0.9, 1),
-            'accent': (0.2, 0.6, 0.2, 1)
-        }
-        self.dark_colors = {
-            'bg': (0.1, 0.1, 0.1, 1),
-            'fg': (1, 1, 1, 1),
-            'secondary': (0.2, 0.2, 0.2, 1),
-            'accent': (0.4, 0.8, 0.4, 1)
-        }
 
         # Progress bar
         self.progress = ProgressBar(max=100, size_hint_y=None, height=20)
@@ -563,37 +507,6 @@ class YouTubeDownloaderGUI(BoxLayout):
                 self.format_var = "audio"
                 self.quality_spinner.values = ('320kbps', '256kbps', '192kbps', '128kbps', '64kbps')
                 self.quality_spinner.text = '192kbps'
-
-    def browse_directory(self, instance):
-        # For simplicity, we'll use a text input for directory
-        # In a full implementation, you'd use file chooser
-        pass
-
-    def toggle_theme(self, instance):
-        self.is_dark_mode = not self.is_dark_mode
-        colors = self.dark_colors if self.is_dark_mode else self.light_colors
-
-        # Update button appearance
-        self.theme_button.text = "☀️" if self.is_dark_mode else "🌙"
-
-        # Update main background color
-        self.background_color = colors['bg']
-
-        # Update key widget colors
-        self._apply_theme_colors(colors)
-
-    def _apply_theme_colors(self, colors):
-        # Update labels
-        for widget in self.walk():
-            if isinstance(widget, Label):
-                widget.color = colors['fg']
-            elif isinstance(widget, Button):
-                if widget == self.start_button:
-                    widget.background_color = colors['accent']
-                widget.color = colors['fg']
-            elif isinstance(widget, TextInput):
-                widget.background_color = colors['secondary']
-                widget.foreground_color = colors['fg']
 
     def log_message(self, message):
         Clock.schedule_once(lambda dt: self._update_log(message))
@@ -664,18 +577,7 @@ class YouTubeDownloaderGUI(BoxLayout):
         )
         popup.open()
 
-
 class YouTubeDownloaderApp(App):
     def build(self):
         self.title = "YouTube Downloader"
         return YouTubeDownloaderGUI()
-
-
-if __name__ == "__main__":
-    # Check for command line arguments
-    if len(sys.argv) > 1 and sys.argv[1] == '--list-formats':
-        url = input("Enter the YouTube URL to list formats: ")
-        download_youtube_content([url], list_formats=True)
-    else:
-        # Launch Kivy GUI
-        YouTubeDownloaderApp().run()
