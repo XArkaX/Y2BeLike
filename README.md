@@ -18,6 +18,7 @@ Una aplicación moderna para descargar videos y audio de YouTube con interfaz gr
 ### 1. Clona o descarga el proyecto
 ```bash
 git clone <repository-url>
+cd Download-Simply-Videos-From-YouTube-main
 ```
 
 ### 2. Instala las dependencias
@@ -31,7 +32,12 @@ pip install -r requirements.txt
 python launcher.py
 ```
 
-**Opción B: Directo**
+**Opción B: Archivo batch (Windows)**
+```bash
+run_downloader.bat
+```
+
+**Opción C: Directo**
 ```bash
 python download.py
 ```
@@ -71,6 +77,7 @@ python download.py
 
 - `download.py`: Aplicación principal
 - `launcher.py`: Ejecuta sin mostrar terminal
+- `run_downloader.bat`: Launcher para Windows
 - `requirements.txt`: Dependencias del proyecto
 - `README.md`: Esta documentación
 
