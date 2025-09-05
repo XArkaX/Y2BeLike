@@ -18,7 +18,6 @@ Una aplicación moderna para descargar videos y audio de YouTube con interfaz gr
 ### 1. Clona o descarga el proyecto
 ```bash
 git clone <repository-url>
-cd Download-Simply-Videos-From-YouTube-main
 ```
 
 ### 2. Instala las dependencias
